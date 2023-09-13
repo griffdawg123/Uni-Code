@@ -1,0 +1,31 @@
+#!/bin/dash
+#error checking
+if [ "$#" -ne "1" ]; then
+    echo "usage: $0 <commit>:<filename>"
+fi
+input=$1
+commitnum=$(echo $input | cut -d":" -f1)
+filename=$(echo $input | cut -d":" -f2)
+current_branch="$(cat .tigger/current_branch)"
+if [ $(echo "$commitnum" | grep -E "[0-9]") ]; then
+    if [ -d ".tigger/commit$commitnum" ]; then
+        if [ -f ".tigger/commit$commitnum/$filename" ]; then
+            cat ".tigger/commit$commitnum/$filename"
+        else
+            echo "$0: error: '$filename' not found in commit $commitnum"
+        fi
+    else
+        echo "$0: error: unknown commit '$commitnum'"
+        exit 1
+    fi
+elif [ $(echo "$commitnum" | grep -E ".") ]; then
+    echo "$0: error: unknown commit '$commitnum'"
+    exit 1
+else
+    if [ -f ".tigger/branches/$current_branch/index/$filename" ]; then
+        cat ".tigger/branches/$current_branch/index/$filename"
+    else
+        echo "$0: error: '$filename' not found in index"
+    fi 
+fi
+    

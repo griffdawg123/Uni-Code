@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+# ==================================================================
+# -- Imports --
+# ==================================================================
+
+import sys
+import re
+import fileinput
+import argparse
+import tempfile
+from itertools import groupby
+
+# ==================================================================
+# -- Helper Functions --
+# ==================================================================
+
+# === returns a list of files as a single file object ===
+def concat_file(file_list):
+    return fileinput.input(file_list)
+
+# === returns the help message ===
+def help_msg(name=None):
+    return "usage: slippy [-i] [-n] [-f <script-file> | <sed-command>] [<files>...]"
+
+# === checks if all commands in a list of commands match a supplied regex ==
+def allmatch(regex, command_list):
+    for comm in command_list:
+        if not re.match(regex, comm):
+            return False
+    return True
+
+# ==================================================================
+# -- Main --
+# ==================================================================
+
+# === Matches all valid slippy commands
+slippy_command_regex = r"^((([0-9]*)|(/[^/]*/)|\$)\s*((,)\s*(([0-9]*)|(/[^/]*/)))?)?\s*([pqd]|(s(.)([^\12]*)\12([^\12]*)\12(g?))|([:bt] [^\s]*)|[iac] .*)\s*(#.*)?"
+
+# === Main command of the slippy program ====
+def main(commands):
+    # === command argument parsers === 
+    parser = argparse.ArgumentParser(usage=help_msg())
+    parser.add_argument('-i', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('-n', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('-f', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('command', help=argparse.SUPPRESS)
+    parser.add_argument('infiles', nargs='*', default=sys.stdin, help=argparse.SUPPRESS)
+    args = vars(parser.parse_args())
+    # === command is silent if -n command is present ===
+    silent = args['n']
+    # === set outstream based on -i option ===
+    outstream = sys.stdout
+    if args['i']:
+        outstream = tempfile.TemporaryFile(mode='w+t')
+    # == either commands are in a file or are in the command line ===
+    # === split commands by newline and then semicolons ===
+    command_list = []
+    if args['f']:
+        commands_file = args['command']
+        with open(commands_file) as infile:
+            command_list = [line.rstrip() for line in infile]
+        new_command_list = []
+        for comm in command_list:
+            new_command_list += comm.split(";")
+        command_list = new_command_list
+    else:
+        command_list = [args['command']]
+        command_list = command_list[0].splitlines()
+        new_commands = []
+        for comm in command_list:
+            new_commands += comm.split(";")
+        command_list = new_commands
+    command_list = [comm.lstrip() for comm in command_list]
+    # === fix up command by removing whitespace and comments ===
+    fixed_commands = []
+    new_comm = ''
+    for i, comm in enumerate(command_list):
+        if comm:
+            new_comm = comm
+            new_comm = re.sub(r"^#.*", "", new_comm)
+            new_comm = re.sub(slippy_command_regex, r'\2\6\7\10', new_comm)
+            if new_comm:
+                fixed_commands.append(new_comm)
+    command_list = fixed_commands
+    command_list = [i[0] for i in groupby(command_list)]
+    # === if input command has a semicolon in it it will not match the regex, so recombine to make it vaild ===
+    while not allmatch(slippy_command_regex, command_list):
+        fixed_commands = []
+        new_comm = ''
+        i = 0
+        while i < len(command_list):
+            new_comm = command_list[i]
+            if not re.match(slippy_command_regex, new_comm) and i < len(command_list):
+                new_comm = new_comm+";"+command_list[i+1]
+                i += 1
+            fixed_commands.append(new_comm)
+            i += 1
+        command_list = fixed_commands
+    # === loop through the produced commands and find supplied addresses ===
+    addresses = []
+    for i, comm in enumerate(command_list):
+        if add := re.search(r"(([0-9]+|/.*/|\$)(,([0-9]+|/.*/))?)?[qpdsaic:tb]", comm):
+            addresses.append(add.group()[:-1].split(","))
+        elif re.match("^[pdsqaic:tb]$", comm):
+            addresses.append([''])
+        else:
+            print("slippy: command line: invalid command")
+            sys.exit(1)
+    # === if there are command args after the command, use them as input, rather than stdin
+    stream = args['infiles']
+    if stream != sys.stdin:
+        stream = concat_file(stream)
+    try:
+        try:
+            # === used to check if we are within an address range ===
+            in_range = [False for _ in command_list]
+            line_num = 0
+            line = stream.readline()
+            while line:
+                next_line = stream.readline()
+                output = line.rstrip()
+                i = 0
+                last_success = False
+                while i < len(command_list):
+                    pre_command_output = output
+                    comm = command_list[i]
+                    # === SINGLE ADDRESS ===
+                    if len(addresses[i]) == 1:
+                        # === If we have a line number address ===
+                        if addresses[i][0].isnumeric():
+                            if line_num+1 == int(addresses[i][0]):
+                                i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                # === if a transfermation has been made, then last substitution was a success
+                                if output != pre_command_output:
+                                    last_success = True
+                            if silent and i == len(command_list)-1:
+                                i, output, last_success = i, None, False
+                        # === no address, just run command ===
+                        elif not addresses[i][0] and comm.lstrip()[0] != ":":
+                            i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                            if output != pre_command_output:
+                                last_success = True
+                        # === regex address ===
+                        else:
+                            # === match with last line ===
+                            if addresses[i][0] == '$':
+                                if not next_line:
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                                if silent and i == len(command_list)-1:
+                                    i, output, last_success = i, None, False
+                            elif comm.lstrip()[0] == ":":
+                                pass
+                            else:
+                                regex = addresses[i][0][1:-1]
+                                if re.search(regex, output):
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                                if silent and i == len(command_list)-1:
+                                    i, output, last_success = i, None, False
+                    # === ADDRESS RANGE === 
+                    else:
+                        # === entering the range === #
+                        if not in_range[i]:
+                            # === check if matches the first address line and flip switch, otherwise output is none. === 
+                            if addresses[i][0].isnumeric():
+                                # === If we match the address, run the command and enter range ===
+                                if line_num+1 == int(addresses[i][0]):
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                                    in_range[i] = True
+                                # === If we've run the final command and the input should not be printed, remove it ===
+                                if silent and i == len(command_list)-1:
+                                    i, output, last_success = None
+                            else:
+                                regex = addresses[i][0][1:-1]
+                                if output and re.search(regex, output):
+                                    in_range[i] = True
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                                if silent and i == len(command_list)-1:
+                                    i, output, last_success = None
+                        # === we are within the range === 
+                        else:
+                            # === match the final range? ===
+                            if addresses[i][1].isnumeric():
+                                if line_num+1 == int(addresses[i][1]):
+                                    in_range[i] = False
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                                # === first parameter is a regex and we no longer match it
+                                elif not addresses[i][0].isnumeric() and not re.search(addresses[i][0][1:-1], output) and line_num+1 > int(addresses[i][1]):
+                                    in_range[i] = False
+                                else:
+                                    i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                    if output != pre_command_output:
+                                        last_success = True
+                            elif output:
+                                if re.search(addresses[i][1][1:-1], output):
+                                    in_range[i] = False
+                                i, output, last_success = commands[comm.lstrip(','.join(addresses[i])).lstrip()[0]](silent, addresses[i], comm.lstrip(','.join(addresses[i])), output, line_num, command_list, i, last_success)
+                                if output != pre_command_output:
+                                    last_success = True
+                            if silent and i == len(command_list)-1:
+                                i, output, last_success = i, None, False
+                    i += 1
+                if output != None:
+                    outstream.write(output+'\n')
+                line = next_line
+                line_num += 1
+        except KeyboardInterrupt as _:
+            sys.exit()
+    except KeyError as _:
+        try:
+            for line in sys.stdin:
+                print(line.rstrip())
+        except KeyboardInterrupt as _:
+            sys.exit(1)
+    if outstream != sys.stdout:
+        outstream.seek(0)
+        with open(args['infiles'][0], 'w') as outfile:
+            for line in outstream:
+                outfile.write(line)
+        outstream.close()
+
+# ==================================================================
+# Commands
+# ==================================================================
+
+# === quit at supplied address ===
+def q(silent, addresses, command, text, line_num, command_list, i, last_success):
+    if text:
+        if not silent:
+            print(text)
+        sys.exit(0)
+    return i, text, False
+
+# === print at supplied address ===
+def p(silent, addresses, command, text, line_num, command_list, i, last_success):
+    if text:
+        print(text)
+    return i, text, False
+
+# === delete at supplied address ===
+def d(silent, addresses, command, text, line_num, command_list, i, last_success):
+    return i, None, False
+
+# === substitute at the supplied address ===
+def s(silent, addresses, command, text, line_num, command_list, i, last_success):
+    glob = (0 if command[-1] == 'g' else 1)
+    delimiter = command.lstrip()[1]
+    args = command.split(delimiter)[1:]
+    arg_checked=[]
+    arg_ind = 0
+    new_arg_ind = 0
+    while arg_ind < len(args):
+        arg_checked.append(args[arg_ind])
+        while arg_checked[new_arg_ind][-1:] == "\\" and arg_ind < len(args):
+            arg_ind += 1
+            arg_checked[new_arg_ind] = arg_checked[new_arg_ind][:-1]+delimiter+args[arg_ind]
+        new_arg_ind += 1
+        arg_ind += 1
+    args = arg_checked
+    return i, re.sub(args[0], args[1], text, count=glob), False
+
+def a(silent, addresses, command, text, line_num, command_list, i, last_success):
+    return i, text+"\n"+command.strip(",".join(addresses))[1:].lstrip(), False
+
+def i(silent, addresses, command, text, line_num, command_list, i, last_success):
+    print(command.strip(",".join(addresses))[1:].lstrip())
+    return i, text, False
+
+def c(silent, addresses, command, text, line_num, command_list, i, last_success):
+    return i, command.strip(",".join(addresses))[1:].lstrip(), False
+
+def b(silent, addresses, command, text, line_num, command_list, i, last_success):
+    new_i = command_list.index(f":{command.lstrip()[1:]}")
+    return new_i, text, False
+
+def t(silent, addresses, command, text, line_num, command_list, i, last_success):
+    new_i = i
+    if last_success:
+        new_i = command_list.index(f":{command.lstrip()[1:]}")
+    return new_i, text, False
+
+# ==================================================================
+# -- Runner --
+# ==================================================================
+
+if __name__ == "__main__":
+    commands = {
+        "q" : q,
+        "p" : p,
+        "d" : d,
+        "s" : s,
+        "a" : a,
+        "i" : i,
+        "c" : c,
+        "b" : b,
+        "t" : t,
+    }
+    main(commands)

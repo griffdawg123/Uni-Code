@@ -1,0 +1,20 @@
+#!/bin/dash
+if [ $# -gt 0 ]; then
+    echo "usage: tigger-init"
+    exit 1
+elif test -d "./.tigger"; then
+    echo "tigger-init: error: .tigger already exists"
+    exit 1
+else
+    mkdir .tigger
+    mkdir .tigger/branches
+    mkdir .tigger/branches/master
+    mkdir .tigger/branches/master/repo
+    mkdir .tigger/branches/master/index
+    touch .tigger/commit_log.txt
+    touch .tigger/deleted.txt
+    echo master > .tigger/current_branch
+    echo -1 > .tigger/branches/master/lastcommit
+    echo "Initialized empty tigger repository in .tigger"
+    exit 0
+fi

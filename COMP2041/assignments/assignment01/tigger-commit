@@ -1,0 +1,75 @@
+#!/bin/dash
+# check errors
+if [ $# -lt 2 ] || ( ( [ $# -eq 2 ] && [ $1 != "-m" ] ) || ( [ $# -eq 3 ] && [ $1 != "-a" ] && [ $2 != "-m" ] ) ); then
+    echo "usage: $0 [-a] -m commit-message"
+    exit 1
+fi
+message=$2
+# https://stackoverflow.com/questions/9964823/how-to-check-if-a-file-is-empty-in-bash
+if [ -z "$(grep '[^[:space:]]' .tigger/commit_log.txt)" ]
+then
+    commitnum=0
+    lastcommit=-1
+    # echo "0 $message" >> .tigger/commit_log.txt
+else
+    lastcommit=$(head -1 .tigger/commit_log.txt | cut -b1)
+    commitnum=$((lastcommit+1))
+    # echo "$commitnum $message" >> .tigger/commit_log.txt
+fi
+current_branch="$(cat .tigger/current_branch)"
+if [ "$1" = "-a" ]; then
+    for file in ".tigger/branches/$current_branch/index/"*
+    do
+        file_name="${file##*/}"
+        if [ -f $file ] && [ $file_name != "lastcommit" ]; then
+            cp "$file_name" ".tigger/branches/$current_branch/index/$file_name"
+        fi
+    done 
+fi
+if [ $lastcommit -gt -1 ]; then
+    difffiles=0
+    for file in ".tigger/branches/$current_branch/repo/"*
+    do
+        file_name="${file##*/}"
+        
+        diff --brief ".tigger/branches/$current_branch/index/$filename" ".tigger/commit$lastcommit/$filename" >/dev/null
+        if [ $? -eq 1 ]; then
+            difffiles=$((difffiles+1))
+        elif [ -f ".tigger/branches/$current_branch/repo/$file_name" ] && [ ! -f ".tigger/branches/$current_branch/index/$file_name" ]; then
+            difffiles=$((difffiles+1))
+        fi
+    done
+fi
+if [ $lastcommit -eq -1 ] || [ $difffiles -gt 0 ]; then
+    echo "$commitnum $message" | cat - .tigger/commit_log.txt > temp && mv temp .tigger/commit_log.txt
+    echo "Committed as commit $commitnum"
+    mkdir ".tigger/commit$commitnum"
+    for file in ".tigger/branches/$current_branch/index/"*
+    do
+        if [ -f $file ]; then
+            file_name="${file##*/}"
+            if echo $file_name | grep -E ".*\.removed$"; then
+                rm ".tigger/branches/$current_branch/index/$file_name"
+                if [ -f $(echo ".tigger/branches/$current_branch/repo/$file_name" | sed "s/\.removed$//g") ]; then
+                    rm $(echo ".tigger/branches/$current_branch/repo/$file_name" | sed "s/\.removed$//g")
+                fi
+            else
+                cp ".tigger/branches/$current_branch/index/$file_name" ".tigger/"commit$commitnum"/${file##*/}"
+                cp ".tigger/branches/$current_branch/index/$file_name" ".tigger/branches/$current_branch/repo/${file##*/}"
+            fi >/dev/null
+        fi
+    done
+    while read -r file
+    do
+        if [ ! -f $file ]; then
+            $(cat .tigger/deleted.txt | sed "/$file/d" > .tigger/deleted.txt)
+        fi
+    done < ".tigger/deleted.txt"
+    # for file in ".tigger/index/"*
+    # do
+    #     rm $file
+    # done
+else
+    echo "nothing to commit"
+fi
+

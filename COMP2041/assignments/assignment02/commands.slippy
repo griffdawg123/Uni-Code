@@ -1,0 +1,16 @@
+: right
+s/[^<>]/>/
+t skip1
+q
+: skip1
+p
+/[<>]+5/b left
+b right
+: left
+s/[^<>]/</
+t skip2
+q
+: skip2
+p
+/[<>]+0/b right
+b left

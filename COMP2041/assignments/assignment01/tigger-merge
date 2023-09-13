@@ -1,0 +1,14 @@
+#!/bin/dash
+if [ $# -ne 3 ] || [ "$2" = "-m" ]; then
+    echo "usage: $0 <branch|commit> -m message"
+    exit 1
+fi
+if [ ! -d ".tigger/branches/$2" ]; then
+    echo "$0: error: unknown branch '$2'"
+    exit 1
+else
+    # take note of the repo as of the fork
+    # compare the files in both the merger and mergee files and if both differ, throw error.
+    
+fi
+

@@ -1,0 +1,38 @@
+This file is automarked.
+
+Do not add extra lines to this file, just add your answers.
+
+For example if your answer to Q0 is: "grep -E Andrew words.txt"
+Change the line that starts with
+    "Q0 answer:"
+to
+    "Q0 answer: grep -E Andrew words.txt"
+------------------------------------------------------------------------------------------------------------------------
+
+
+1) Write a shell pipeline which will print how many classes there are.
+Q1 answer: wc -l < classes.tsv
+
+
+2) Write a shell pipeline which will print how many different courses have classes.
+Q2 answer: cut -f1 classes.tsv | sort -u | wc -l
+
+
+3) Write a shell pipeline which will print the course with the most classes, and how many classes are in this course.
+Q3 answer: sort -k1 classes.tsv | cut -f1 | uniq -c | sort -r | head -1
+
+
+4) Write a shell pipeline which will print the two rooms most frequently used by non-LAB CSE classes and how often they are used.
+Q4 answer: grep -Ev LAB classes.tsv | sort -k2 | cut -f7 | sort -r | uniq -c | sort -r | head -2
+
+
+5) Write a shell pipeline which will print the most common day and hour in the week for classes to start and how many classes start at that time.
+Q5 answer: sort -k6 classes.tsv | cut -f6 | cut -d "-" -f1 | uniq -c | sort -r | head -1
+
+
+6) Write a shell pipeline which will print the latest time a class will finish.
+Q6 answer: cut -f6 classes.tsv | cut -d "-" -f 2 | sort -r | head -1
+
+
+7) Write a shell pipeline which will print a list of the course codes of COMP courses that run 2 or more classes of the same type starting at the same time on the same day.  (e.g. three tuts starting Monday at 10:00).
+Q7 answer: grep -E "^COMP" classes.tsv | cut -f1,3,6 | sort | uniq -c | sort | grep -Ev "1 COMP" | cut -f1 | cut -c9- | sort | uniq -c | cut -c9-

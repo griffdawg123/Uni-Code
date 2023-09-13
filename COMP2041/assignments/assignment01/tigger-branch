@@ -1,0 +1,55 @@
+#!/bin/dash
+# == error checking ==
+# check for correct input
+current_branch=$(cat ".tigger/current_branch")
+case $# in
+    0)
+        ls -all ".tigger/branches/" | grep drw | cut -d" " -f9 | grep -vE "^\."
+        ;;
+    1)
+        if [ ! -d ".tigger/branches/$1" ]; then
+            mkdir ".tigger/branches/$1"
+            mkdir ".tigger/branches/$1/index"
+            mkdir ".tigger/branches/$1/repo"
+            for file in ".tigger/branches/$current_branch/repo"/*
+            do
+                if [ -f $file ]; then 
+                    newbranch=$(echo $file | sed "s/$current_branch/$1/g")
+                    cp $file $newbranch
+                fi
+            done
+            for file in ".tigger/branches/$current_branch/index"/*
+            do
+                if [ -f $file ]; then 
+                    newbranch=$(echo $file | sed "s/$current_branch/$1/g")
+                    cp $file $newbranch
+                fi
+            done
+        else
+            echo "$0: error: branch '$1' already exits"
+            exit 1
+        fi
+        ;;
+    2)
+        if [ "$1" = "-d" ]; then
+            if [ -d ".tigger/branches/$2" ]; then
+                if [ "$2" != "master" ]; then
+                    rm -r ".tigger/branches/$2"
+                else
+                    echo "$0: error: can not delete branch 'master'"
+                    exit 1
+                fi
+            else
+                echo "$0: errorL branch '$2' doesn't exist"
+                exit 1
+            fi
+        else
+            echo "usage: $0 [-d] <branch>"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "usage: $0 [-d] <branch>"
+        exit 1
+        ;;
+esac

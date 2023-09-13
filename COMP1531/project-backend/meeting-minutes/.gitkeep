@@ -1,0 +1,84 @@
+4/6/21 
+Tute/lab Week 8
+In attendance: Full attendance
+Venue: Zoom
+Agenda
+
+
+Start debugging before 16/4/2021
+Action items:
+
+1.solve query about http and what's wrong with iteration 2 in help session this week/ask tutors
+
+
+2.go through iteration 3 together, reading and assigning work.
+
+3. Team reflection in microsoft teams
+
+
+Key takeaways:
+Increase git taskboard usage add issues on the taskboard.
+More frequent meetings 
+Ensure code is pylint compliant before beginning the debugging process.
+Try to start debugging before 16/4/2021
+Hoya's notes
+
+what changes you made to make that pass easier for others to understand
+more descriptive merge request titles
+put minutes on repo
+clear up the hardcoding in dms and messages
+
+
+
+cleared up server.py:
+	Put all the http tests into server.py
+
+Got rid of all the try and excepts.
+
+Week 9 Friday, saturday help session for debugging 
+
+
+
+
+Meeting Minutes 11/4/2021 7:00 pm
+
+Attendance: full attendance
+
+
+Agenda:
+- Catch-up before the week starts.
+- Update on iteration 2 and the problems that have been fixed.
+- progress report. what we want to achieve by certain days next week.
+- Confirmation with section distribution for iteration 3.
+- Discuss the survey results if there are any.
+
+
+Action:
+- Celine and Nicole are planning on attending the help session on Monday 3-5pm.
+- Griffin's working on standup.
+- Celine's working on message - pin, unpin, react, and unreact
+- Nicole's doing message - send later, and send later dm
+- Angus and Benson are doing user - profile_upload photo, stats, users stats
+- Once the survey results are in Benson will work on potential additions to the interface that may aid users that completed the survey.
+
+Meeting ended: 9pm 11/4/2021
+
+
+Meeting Minutes 19/4/2021 3:00 pm
+
+Attendance: full attendance
+
+
+Agenda:
+- Catch-up
+- Update on iteration 3 and the problems that have been fixed/what is left to do for iteration 3
+- Discuss the survey results and choose which ones to use for the Requirements and design for future work section.
+- user_stats, users_stats, message tests and http tests to be finished up
+
+Action:
+
+-Celine Nicole and Angus are going to finish up the implementation for user_stats, users_stats.
+- Benson finishes off http tests for user and messages.
+- Work on the design for future work 
+
+Meeting ended: 4:30pm 19/4/2021

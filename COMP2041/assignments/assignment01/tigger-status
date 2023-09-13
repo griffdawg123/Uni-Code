@@ -1,0 +1,100 @@
+#!/bin/dash
+# e - deleted - deleted via tigger-rm
+# f - same as repo - in repo, no changes in directory
+# '''
+# tigger-add:
+#   if not in repository: added to index
+#   if in repository and file in index == file in directory: file changed, changes staged for commit
+# tigger-status:
+#   check if a file in the current directory is different to both the index and the repository: different changes not staged for commit
+#   check if file is different to the repo, not in index: changes not staged for commit
+#   check file in status file, if not in current dir and status is not "deleted": file deleted
+#   if file in current dir but not in repo or index: untracked
+# tigger-rm:
+#   if --cached removed, compare dir to repo, if same: same as repo
+#   if --cached removed, compare dir to repo, if diff: changes not staged for commit
+#   if totally removed: deleted
+# tigger-commit:
+#   same as repo once commited.
+# '''
+current_branch=$(cat ".tigger/current_branch")
+for file in $(pwd)/*
+do
+  if [ -f "$file" ]; then
+    file_name="${file##*/}"
+    if [ -f ".tigger/branches/$current_branch/repo/$file_name" ]; then
+      # FILE IS IN THE REPO
+      if [ -f ".tigger/branches/$current_branch/index/$file_name" ]; then
+        # FILE IS IN THE INDEX
+        diff -q ".tigger/branches/$current_branch/repo/$file_name" ".tigger/branches/$current_branch/index/$file_name" >/dev/null
+        if [ $? -eq 1 ]; then
+          # FILE IN THE INDEX IS DIFFERENT TO FILE IN THE REPOSITORY
+          diff -q ".tigger/branches/$current_branch/index/$file_name" "$file" >/dev/null
+          if [ $? -eq 1 ]; then
+            echo "$file_name - file changed, different changes staged for commit" >> tmp.txt 
+          else
+            echo "$file_name - file changed, changes staged for commit" >> tmp.txt 
+          fi
+        else
+          # FILE IN THE INDEX IS THE SAME AS THE REPOSITORY
+          diff -q "$file" ".tigger/branches/$current_branch/repo/$file_name" >/dev/null
+          if [ $? -eq 1 ]; then
+            # FILE IN THE REPO IS DIFFERENT TO THE FILE IN THE DIRECTORY
+            echo "$file_name - file changed, changes not staged for commit" >> tmp.txt 
+          else
+            # FILE IN THE REPO IS THE SAME AS THE FILE IN THE DIRECTORY
+            echo "$file_name - same as repo" >> tmp.txt 
+          fi
+        fi 
+      else
+        # FILE IS NOT IN THE INDEX
+        diff -q "$file" ".tigger/branches/$current_branch/repo/$file_name" >/dev/null
+        if [ $? -eq 1 ]; then
+          # FILE IN THE DIRECTORY IS DIFFERENT TO THE ONE IN THE REPO
+          echo "$file_name - file changed, changes not staged for commit" >> tmp.txt 
+        else
+          # FILE IN THE DIRECTORY IS THE SAME AS THE ONE IN THE REPO
+          echo "$file_name - same as repo" >> tmp.txt 
+        fi
+      fi
+    else
+      # FILE IS NOT IN THE REPO
+      if [ -f ".tigger/branches/$current_branch/index/$file_name" ]; then
+        # FILE IS IN THE INDEX
+        if diff -q "$file" ".tigger/branches/$current_branch/index/$file_name">/dev/null; then
+          echo "$file_name - added to index" >> tmp.txt
+        else
+          echo "$file_name - added to index, file changed" >> tmp.txt
+        fi
+      else
+        # FILE IS NOT IN THE INDEX
+        echo "$file_name - untracked" >> tmp.txt 
+      fi
+    fi
+  fi
+done
+if [ ! -f "tmp.txt" ]; then
+  touch tmp.txt
+fi
+while read -r line
+do
+  echo "$line - deleted" >> tmp.txt
+done < ".tigger/deleted.txt"
+for file in ".tigger/branches/$current_branch/index/"*
+do
+  file_name="${file##*/}"
+  if [ ! -f "$file_name" ]; then
+    # echo "$file_name does not exist"
+    if ! grep -qE $file_name ".tigger/deleted.txt" && [ "$file_name" != "*" ]; then
+      if [ -f ".tigger/branches/$current_branch/index/$file_name" ] && [ ! -f ".tigger/branches/$current_branch/repo/$file_name" ]; then
+        echo "$file_name - added to index, file deleted" >> tmp.txt
+      else
+        echo "$file_name - file deleted" >> tmp.txt
+      fi
+    fi 2>/dev/null
+  fi
+done
+cat tmp.txt | sort
+rm tmp.txt
+
+

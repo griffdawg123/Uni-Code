@@ -1,0 +1,121 @@
+#!/bin/dash
+if [ $# -lt 1 ]; then
+    echo "usage: $0 [--force] [--cached] <filenames>"
+    exit 1
+fi
+for arg in $@
+do
+    # echo $arg
+    # echo $(echo $arg | grep -E "^--")
+    # echo $?
+    if [ $(echo $arg | grep -E "^--") ]; then
+        # echo "command arg"
+        if ( [ "$(echo "$arg" | sed "s/--\(.*\)/\1/g")" = "force" ] || [ "$(echo "$arg" | sed "s/--\(.*\)/\1/g")" = "cached" ] ); then
+            continue
+        else
+            echo "usage: $0 [--force] [--cached] <filenames>"
+            exit 1
+        fi
+    fi
+done
+current_branch=$(cat ".tigger/current_branch")
+for file in $@
+do
+    if [ -f $file ]; then
+        file_name="${file##*/}"
+        if [ -f ".tigger/branches/$current_branch/repo/$file_name" ]; then
+            # in repo
+            if [ -f ".tigger/branches/$current_branch/index/$file_name" ]; then
+                # in the index
+                if ! diff -q $file ".tigger/branches/$current_branch/index/$file_name">/dev/null; then
+                    # new changes not in index
+                    # repository is different to the working file
+                    if ! diff -q ".tigger/branches/$current_branch/index/$file_name" ".tigger/branches/$current_branch/repo/$file_name">/dev/null; then
+                        # repo differs to index differs to working directory
+                        if [ "$1" = "--force" ] || [ "$2" = "--force" ]; then
+                            if [ ! "$1" = "--cached" ] && [ ! "$2" = "--cached" ]; then
+                                rm $file
+                                echo "$file" >> ".tigger/deleted.txt"
+                            fi
+                            rm ".tigger/branches/$current_branch/index/$file_name"
+                            rm ".tigger/branches/$current_branch/repo/$file_name"
+                        else
+                            echo "$0: error: '$file_name' in index is different to both the working file and the repository"
+                            exit 1
+                        fi
+                    else
+                        # index and master is the same, current directory is different
+                        if [ "$1" = "--cached" ] || [ "$2" = "--cached" ]; then
+                            rm ".tigger/branches/$current_branch/index/$file_name"
+                            rm ".tigger/branches/$current_branch/repo/$file_name"
+                        else
+                            echo "$0: error: '$file_name' in the repository is different to the working file"
+                            exit 1
+                        fi
+                    fi
+                else
+                    # file is in the repo, file and index are the same
+                    if ! diff -q ".tigger/branches/$current_branch/index/$file_name" ".tigger/branches/$current_branch/repo/$file_name">/dev/null; then
+                        # file is in the repo, file and index are the same but not in the repo
+                        # staged changes that have not been commited
+                        if [ "$1" = "--cached" ] || [ "$2" = "--cached" ]; then
+                            rm ".tigger/branches/$current_branch/index/$file_name"
+                            rm ".tigger/branches/$current_branch/repo/$file_name"
+                        else
+                            echo "$0: error: '$file_name' has staged changes in the index"
+                            exit 1
+                        fi
+                    else
+                        # file is in the repo and the file and index match that of the repo
+                        if [ ! "$1" = "--cached" ] && [ ! "$2" = "--cached" ]; then
+                            rm $file
+                            echo "$file" >> ".tigger/deleted.txt"
+                        fi
+                        rm ".tigger/branches/$current_branch/index/$file_name"
+                        rm ".tigger/branches/$current_branch/repo/$file_name"
+                    fi
+                fi
+            fi
+        else
+            # not in repo
+            if [ -f ".tigger/branches/$current_branch/index/$file_name" ]; then
+                # in the index
+                if ! diff -q $file ".tigger/branches/$current_branch/index/$file_name">/dev/null; then
+                    if [ "$1" = "--force" ] || [ "$2" = "--force" ]; then
+                        rm ".tigger/branches/$current_branch/index/$file_name"
+                        rm "$file"
+                    else
+                        echo "$0: error: '$file_name' in index is different to both the working file and the repository"
+                        exit 1
+                    fi
+                else
+                    if [ "$1" = "--cached" ] || [ "$2" = "--cached" ]; then
+                        rm ".tigger/branches/$current_branch/index/$file_name"
+                    else
+                        echo "$0: error: '$file_name' has staged changes in the index"
+                        exit 1
+                    fi
+                fi
+            else
+                echo "$0: error: '$file_name' is not in the tigger repository"
+                exit 1
+            fi
+        fi
+    else
+        if [ "$file" != "--cached" ] && [ "$file" != "--force" ]; then
+            echo "$0: error: '$file_name' is not in the tigger repository"
+            exit 1
+        fi
+    fi
+done
+# in repo, changes to file, not in index (repository is different to the working file/ / is not in the tigger repository)
+# in repo, changes to file, in index, new changes to file not in index
+# in repo, changes to file, in index
+# not in repo, changes to file, in index
+# not in repo, changes to file, not in index
+
+# repo index | dir
+# repo | index | dir - B
+# repo |index dir (c == d)
+# dir
+

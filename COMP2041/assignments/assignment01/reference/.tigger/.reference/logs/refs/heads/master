@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 587289e787d25791506ddbec715c1581c118fd95 tigger <tigger@example.com> 1657539399 +1000	commit (initial): 0 first commit
+587289e787d25791506ddbec715c1581c118fd95 717099ca981876cfdbfe78d797f011f729033724 tigger <tigger@example.com> 1657540868 +1000	commit: 1 first commit
+717099ca981876cfdbfe78d797f011f729033724 ced5e99bd66dcee04060ec2a1de6f89560a20879 tigger <tigger@example.com> 1657541620 +1000	commit: 2 first commit
+ced5e99bd66dcee04060ec2a1de6f89560a20879 4fbb4c3e764d77e909391c995f0a7a457c9cf792 tigger <tigger@example.com> 1657543970 +1000	merge first: Fast-forward (no commit created; -m option ignored)
+4fbb4c3e764d77e909391c995f0a7a457c9cf792 af807eaa54fa1245d791a638a0063d7d4883af68 tigger <tigger@example.com> 1657544613 +1000	commit: 4 oint

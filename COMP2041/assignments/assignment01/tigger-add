@@ -1,0 +1,26 @@
+#!/bin/dash
+# == error checking ==
+# check for correct input
+if [ $# -lt 1 ]; then
+    echo "usage: tigger-add <filenames>"
+    exit 1
+# check that tigger has been initialized
+elif [ ! -d ".tigger" ]; then
+    echo "tigger-add: error: tigger repository directory .tigger not found"
+    exit 1
+fi
+current_branch=$(cat ".tigger/current_branch")
+for file in $@; do
+    file_name="${file##*/}"
+    if [ ! -e "$file" ]; then
+        if [ ! -e ".tigger/branches/$current_branch/repo/$file_name" ]; then
+            echo "tigger-add: error: can not open '"$file"'"
+            exit 1
+        else
+            mv ".tigger/branches/$current_branch/index/$file_name" ".tigger/branches/$current_branch/index/$file_name.removed"
+        fi
+    fi
+    if [ -f "$file" ] && [ "$file_name" != "lastcommit" ]; then
+        cp "$file" "./.tigger/branches/$current_branch/index/$file"
+    fi
+done
