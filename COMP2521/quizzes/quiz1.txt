@@ -1,0 +1,31 @@
+Algorithm q1(A, B):
+    Input: arrays A and B each containing n >= 1 integers (they both contain the same number of integers)
+    Output: <unknown>
+
+    int c = 0;      - 1 
+    for (int i = 0; i < n; i++) {  - n
+        int s = 0;  - 1
+        for (int j = 0; j < n; j++) {  - n
+            s = s + A[0];           - 1
+            for (int k = 1; k < j; k++) {   -n log n
+                s = s + A[k];
+            }
+        }
+        if (B[i] == s) {
+            c++;
+        }
+    }
+    return c;
+
+
+    Algorithm q2(A):
+    Input: array A containing n >= 1 integers
+    Output: <unknown>
+
+    int select_sum = 0;
+    int i = n - 1;
+    while (i > 0) {
+        select_sum  = select_sum + A[i];
+        i = i / 2;
+    }
+    return select_sum;

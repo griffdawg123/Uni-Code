@@ -1,0 +1,33 @@
+Input Size  Has Duplicates  Initial Order   Number of runs  Avg Time for useIntList Avg Time for sort
+10000       no              random          5               0.195                   0.004 
+10000       no              sorted          5               0.199                   0
+10000       no              reverse         5               0                       0
+10000       yes             random          5               0.192                   0.005
+10000       yes             sorted          5               0.201                   0.001
+10000       yes             reverse         5               0.001                   0
+20000       no              random          5               1.271                   0.008
+20000       no              sorted          5               0.794                   0.004
+20000       no              reverse         5               0.004                   0.004
+20000       yes             random          5               1.278                   0.008
+20000       yes             sorted          5               1.250                   0.007
+20000       yes             reverse         5               0.005                   0.004
+50000       no              random          5               11.126                  0.027 
+50000       no              sorted          5               4.976                   0.011
+50000       no              reverse         5               0.011                   0.012
+50000       yes             random          5               10.958                  0.027
+50000       yes             sorted          5               4.977                   0.013
+50000       yes             reverse         5               0.013                   0.015
+100000      no              random          5               49.418                  0.059
+100000      no              sorted          5               19.749                  0.024
+100000      no              reverse         5               0.029                   0.029
+100000      yes             random          5               48.408                  0.060
+100000      yes             sorted          5               19.854                  0.029
+100000      yes             reverse         5               0.028                   0.030
+
+
+Observations:
+> Clearly, the more numbers needed to sort, the longer the system will take to sort
+> Reverse order is by far the fastest method on all accounts. This is due to each number encounted to sort will be the shortest in the list. 
+    This means that the algorithm doesn't need to iterate through the full list and thus will be quicker than either of the other data lists
+> randomly ordered data lists take the longest time, *not sure why*
+> The in built sorting function is extremely quick showing my algorithm is unoptimised.
