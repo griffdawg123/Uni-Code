@@ -1,0 +1,13 @@
+// A simple C program that attempts to be punny
+// Written 17/02/20
+// by Griffin Doyle
+// for COMP1511 Lab 01 Exercise 1
+
+#include <stdio.h>
+
+int main(void) {
+
+    printf("  ___\n ('V')\n((___))\n v   v\n");
+
+    return 0;
+}

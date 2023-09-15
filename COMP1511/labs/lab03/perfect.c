@@ -1,0 +1,28 @@
+// Determines whether or not a number is perfect (sum of divisors = number)
+// Griffin Doyle (z5311098), 02/03/20
+
+#include <stdio.h>
+
+int main (void) {
+    int number = -1;
+    int sum = 0;
+    int counter = 1;
+    printf("Enter number: ");
+    scanf("%d", &number);
+    printf("The factors of %d are: \n", number);
+    while (counter <= number) {
+        if (number % counter == 0) {
+            printf("%d\n", counter);
+            sum += counter;
+        }
+        counter++;
+    }
+    printf("Sum of factors = %d\n", sum);
+    if ((sum-number) == number) {
+        printf("%d is a perfect number\n", number);
+    } else {
+        printf("%d is not a perfect number\n", number);
+    }
+    
+    return 0;
+}

@@ -1,0 +1,18 @@
+// swaps upper case to lower case and vice versa
+// Griffin Doyle (z5311098)
+// 30/03
+
+#include <stdio.h>
+
+int swap(int c);
+
+int main(void) {
+    int character = getchar();
+    while (character != EOF) {
+        
+    }
+}
+
+int swap(int c) {
+    if (c >= 
+}

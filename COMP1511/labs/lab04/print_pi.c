@@ -1,0 +1,33 @@
+// Prints the first n digits of pi, where n is specified 
+// by the user
+// Griffin Doyle (z5311098)
+// 09/03/20
+
+#include <stdio.h>
+
+#define MAX_DIGITS 10
+
+int main(void) {
+    //define pi as an array
+    int pi[MAX_DIGITS] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};
+    printf("How many digits of pi would you like to print? ");
+    
+    //intakes number of digits from user
+    int digits;
+    scanf("%d", &digits);
+    
+    //i is an iterator that counts through each digit of pi
+    int i = 0;
+    while (i < digits) {
+        // prints the digit of pi in the 'i'th position
+        printf("%d", pi[i]);
+        // prints the decimal point after the first 3
+        if (i == 0) {
+            printf(".");
+        } 
+        i++;
+    }
+    printf("\n");
+
+    return 0;
+}

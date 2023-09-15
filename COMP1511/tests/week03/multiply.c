@@ -1,0 +1,21 @@
+// A program that multiplies the absolute value of two values and outputs the
+// result
+// Griffin Doyle (z5311098)
+// 10/03/20
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+
+    int num1, num2, result;
+    scanf("%d %d", &num1, &num2);
+    result = abs(num1) * abs(num2);
+    if (result == 0) {
+        printf("zero\n");
+    } else {
+        printf("%d\n", result);
+    }
+
+    return 0;
+}

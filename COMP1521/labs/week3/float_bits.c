@@ -1,0 +1,56 @@
+// Extract the 3 parts of a float using bit operations only
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#include "floats.h"
+
+#define SIGN 0b1
+#define EXP 0b11111111
+#define FRAC 0b11111111111111111111111
+
+// separate out the 3 components of a float
+float_components_t float_bits(uint32_t f) {
+    struct float_components *float_components = malloc(sizeof(struct float_components));
+    float_components->sign = (f >> 31) & SIGN;
+    float_components->exponent = (f >> 23) & EXP;
+    float_components->fraction = f & FRAC;
+    return *float_components;
+}
+
+// given the 3 components of a float
+// return 1 if it is NaN, 0 otherwise
+// NaN --> 01111111111111111111111111111111
+// exponents ^ EXP should be 0
+// fraction ^ FRAC should be 0
+int is_nan(float_components_t f) {
+    return (((f.exponent & EXP) == EXP) && ((f.fraction & FRAC) != 0));
+}
+
+// given the 3 components of a float
+// return 1 if it is inf, 0 otherwise
+// inf --> 01111111100000000000000000000000
+// sign ^ SIGN should be 1
+// exponent ^ EXP should be 0
+int is_positive_infinity(float_components_t f) {
+    // PUT YOUR CODE HERE
+    return (((f.sign & SIGN) == 0) && ((f.exponent & EXP) == EXP) && ((f.fraction & FRAC) == 0));
+}
+
+// given the 3 components of a float
+// return 1 if it is -inf, 0 otherwise
+// -inf --> 11111111100000000000000000000000
+int is_negative_infinity(float_components_t f) {
+    return (((f.sign & SIGN) == SIGN) && ((f.exponent & EXP) == EXP));
+}
+
+// given the 3 components of a float
+// return 1 if it is 0 or -0, 0 otherwise
+// 0 --> 0/1 0000000000000000000000000000000
+// exponent ^ EXP should be 1
+// fraction ^ FRAC should be 1
+int is_zero(float_components_t f) {
+    return (((f.exponent & EXP) == 0) && ((f.fraction & FRAC) == 0));
+}
